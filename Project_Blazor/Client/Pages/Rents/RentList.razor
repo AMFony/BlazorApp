@@ -1,0 +1,60 @@
+﻿@page "/Rents/List"
+@inject HttpClient http
+
+<div class="row">
+    <div class="col-12">
+        <h3>Rents</h3>
+        <div class="d-flex justify-content-end mb-1">
+            <a class="btn btn-primary btn-sm" href="/Rents/Create">Create New</a>
+        </div>
+        @if(Rents is null)
+        {
+            <div>Loading..</div>
+        }
+        else
+        {
+            <table class="table table-bRented">
+                <thead class="table-light">
+                    <tr>
+                        <th>Rent Date</th>
+                        <th>Customer</th>
+                        <th>Delivery date</th>
+                        <th>Status</th>
+                        <th>Items</th>
+                        <th>Rent Value</th>
+                        <th>Details</th>
+                        <th>...</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach(var o in Rents)
+                    {
+                        <tr>
+                            <td>@o.RentDate.ToString("yyyy-MM-dd")</td>
+                            <td>@o.CustomerName</td>
+                            <td>@o.DeliveryDate?.ToString("yyyy-MM-dd")</td>
+                            <td>@o.Status</td>
+                            <td>@o.ItemCount</td>
+                            <td>@o.RentValue.ToString("0.00")</td>
+                            <td>
+                                <a class="btn btn-link" href="/Rents/Details/@o.RentID">Details</a>
+                            </td>
+                            <td>
+
+                                <a class="btn btn-primary btn-sm" href="/Rents/Edit/@o.RentID">Edit</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
+
+@code {
+    private RentViewDTO[]? Rents;
+    protected override async Task OnInitializedAsync()
+    {
+        Rents = await http.GetFromJsonAsync<RentViewDTO[]>("api/Rents/DTO");
+    }
+}

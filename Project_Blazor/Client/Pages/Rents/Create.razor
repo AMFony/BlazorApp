@@ -1,0 +1,141 @@
+﻿@page "/Rents/Create"
+@inject HttpClient http
+@inject IToastService toastService
+<div class="row">
+    <div class="col-12">
+        <EditForm Model="@Rent" OnValidSubmit="SaveRent">
+            <h3>Create Customer</h3>
+            <DataAnnotationsValidator />
+            <div class="form-group row mb-1">
+                <label class="col-form-label col-2 text-end" for="@Rent.CustomerID">Customer</label>
+                <div class="col-7">
+                    <InputSelect @bind-Value="Rent.CustomerID" class="form-select">
+                        <option value="">Select</option>
+                        @if(customers is not null)
+                        {
+                            foreach(var c in customers)
+                            {
+                                <option value="@c.CustomerID">@c.CustomerName</option>
+                            }
+                        }
+                    </InputSelect>
+                    <ValidationMessage For="@(()=>Rent.CustomerID)" class="text-danger" />
+                </div>
+            </div>
+            <div class="form-group row mb-1">
+                <label class="col-form-label col-2 text-end" for="@Rent.RentDate">Rent date</label>
+                <div class="col-7">
+                    <InputDate Type="InputDateType.Date" @bind-Value="@Rent.RentDate" class="form-control" />
+                    <ValidationMessage For="@(()=>Rent.RentDate)" class="text-danger" />
+                </div>
+            </div>
+            <div class="form-group row mb-1">
+                <label class="col-form-label col-2 text-end" for="@Rent.DeliveryDate">Delivery date</label>
+                <div class="col-7">
+                    <InputDate Type="InputDateType.Date" @bind-Value="@Rent.DeliveryDate" class="form-control" />
+                    <ValidationMessage For="@(()=>Rent.DeliveryDate)" class="text-danger" />
+                </div>
+            </div>
+            <div class="form-group row mb-1">
+                <label class="col-form-label col-2 text-end" for="@Rent.Status">Status</label>
+                <div class="col-7">
+                    <InputSelect  @bind-Value="@Rent.Status" class="form-select" disabled>
+                        @if (statusNames is not null)
+                        {
+                            foreach (var s in statusNames)
+                            {
+                                <option value="@s">@s</option>
+                            }
+                        }
+                    </InputSelect>
+                    <ValidationMessage For="@(()=>Rent.DeliveryDate)" class="text-danger" />
+                </div>
+            </div>
+            <div class="form-group row mb-1">
+               
+                <div class="col-9">
+                    <div class="d-flex justify-content-between" >
+                       <h4>Items</h4> <button @onclick="@AddItem" type="button" class="btn btn-primary btn-sm m-1"><i class="bi bi-plus"></i></button>
+                    </div>
+                </div>
+            </div>
+            @foreach(var oi in Rent.RentCars)
+            {
+                int i = 0;
+                <div class="form-group row mb-1">
+                    <label class="col-form-label col-1 text-end" for="@Rent.CustomerID">Vehicle</label>
+                    <div class="col-3">
+                        <InputSelect @bind-Value="oi.VehicleID" class="form-select">
+                            <option value="">Select</option>
+                            @if (Vehicles is not null)
+                            {
+                                foreach (var p in Vehicles)
+                                {
+                                    <option value="@p.VehicleID">@p.VehicleName</option>
+                                }
+                            }
+                        </InputSelect>
+                        <ValidationMessage For="@(()=>oi.VehicleID)" class="text-danger" />
+                    </div>
+                    <label class="col-form-label col-1 text-end" for="@oi.Quantity">Quantity</label>
+                    <div class="col-3">
+                        <InputNumber @bind-Value="oi.Quantity" class="form-control" />
+                           
+                        <ValidationMessage For="@(()=>oi.Quantity)" class="text-danger" />
+                    </div>
+                    <div class="col-1">
+                        <button @onclick="@(()=>RemoveItem(i++))" type="button" class="btn btn-secondary btn-sm">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            }
+            <div class="form-group row mb-1">
+
+                <div class="col-9">
+                   <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary">Save the Rent</button>
+                   </div>
+                </div>
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    private RentDTO Rent = new();
+    private Customer[]? customers;
+    private Vehicle[]? Vehicles;
+    private string[]? statusNames;
+    protected override async Task OnInitializedAsync()
+    {
+        Rent.RentCars.Add(new RentCarDTO());
+        statusNames = Enum.GetNames<Status>();
+        customers = await http.GetFromJsonAsync<Customer[]>("api/Customers");
+        Vehicles = await http.GetFromJsonAsync<Vehicle[]>("api/Vehicles");
+    }
+    private void AddItem()
+    {
+        Rent.RentCars.Add(new RentCarDTO());
+    }
+    private void RemoveItem(int index)
+    {
+        if(Rent.RentCars.Count>1)
+            ((List<RentCarDTO>)Rent.RentCars).RemoveAt(index);
+    }
+    private async Task SaveRent()
+    {
+        var response = await http.PostAsJsonAsync("api/Rents/DTO", Rent);
+        if (response.IsSuccessStatusCode)
+        {
+            toastService.ShowSuccess("Data saved successfully", "Success");
+            Rent = new();
+            Rent.RentCars.Add(new RentCarDTO());
+        }
+        else
+        {
+            toastService.ShowError("Failed to data.", "Error");
+        }
+        await Task.CompletedTask;
+    }
+}

@@ -1,0 +1,108 @@
+﻿@page "/Vehicles/Create"
+@using System.Net.Http.Headers;
+@inject HttpClient http
+@inject IToastService toastService
+<div class="row">
+    <div class="col-12">
+        <EditForm Model="@Vehicle" OnValidSubmit="SaveVehicle">
+            <h3>Create Vehicle</h3>
+            <DataAnnotationsValidator />
+            <div class="form-group row mb-1">
+                <label class="col-form-label col-2 text-end" for="@Vehicle.VehicleName">Vehicle name</label>
+                <div class="col-4">
+                    <InputText @bind-Value="Vehicle.VehicleName" class="form-control" />
+                    <ValidationMessage For="@(()=>Vehicle.VehicleName)" class="text-danger" />
+                </div>
+            </div>
+            <div class="form-group row mb-1">
+                <label class="col-form-label col-2 text-end" for="@Vehicle.Price">Vehicle price</label>
+                <div class="col-4">
+                    <InputNumber @bind-Value="Vehicle.Price" class="form-control" />
+                    <ValidationMessage For="@(()=>Vehicle.Price)" class="text-danger" />
+                </div>
+            </div>
+            <div class="form-group row mb-1">
+                <label class="col-form-label col-2 text-end" for="@Vehicle.VehicleName">Picture</label>
+                <div class="col-4">
+                    <InputFile OnChange="@OnInputFileChange"  class="form-control" />
+                    <input type="hidden" @bind="Vehicle.Picture" />
+                    <ValidationMessage For="@(()=>Vehicle.Picture)" class="text-danger" />
+                </div>
+            </div>
+            <div class="form-group row mb-1">
+                <label class="col-form-label col-2 text-end" for="@Vehicle.IsAvailable">Available</label>
+                <div class="col-4">
+                    <InputCheckbox @bind-Value="Vehicle.IsAvailable" class="m-2" />
+                   
+                </div>
+            </div>
+            <div class="form-group row mb-1">
+
+                <div class="col-4 offset-2">
+                    <button type="submit" class="btn btn-primary">Save</button>
+
+                </div>
+            </div>
+        </EditForm>
+    </div>
+    <div class="col-12">
+        <a href="/Vehicles/List" class="btn btn-link">Back to list</a>
+    </div>
+</div>
+@code {
+    private VehicleDTO Vehicle = new();
+    IBrowserFile? selectedFile;
+    private void OnInputFileChange(InputFileChangeEventArgs e)
+    {
+        selectedFile = e.File;
+        Vehicle.Picture = e.File.Name;
+
+        //this.StateHasChanged();
+    }
+    private async Task SaveVehicle()
+    {
+        if (Vehicle is not null)
+        {
+
+
+            var saveImage = await UploadItAsysnc();
+            Vehicle.Picture = saveImage.StoredFileName;
+            var response = await http.PostAsJsonAsync("api/Vehicles", Vehicle);
+            if (response.IsSuccessStatusCode)
+            {
+                toastService.ShowSuccess("Data saved successfully", "Success");
+                Vehicle = new();
+               
+            }
+            else
+            {
+                toastService.ShowError("Failed to data.", "Error");
+            }
+
+            
+        }
+    }
+    private async Task<ImageUploadResponse> UploadItAsysnc()
+    {
+        using (var ms = new MemoryStream())
+        {
+
+            if (selectedFile is not null)
+            {
+                var content = new MultipartFormDataContent();
+                var fileContent = new StreamContent(selectedFile.OpenReadStream(long.MaxValue));
+
+                fileContent.Headers.ContentType = new MediaTypeHeaderValue(selectedFile.ContentType);
+                content.Add(content: fileContent, name: "\"file\"", fileName: selectedFile.Name);
+                var response = await http.PostAsync("api/Vehicles/Upload", content);
+                var r = await response.Content.ReadFromJsonAsync<ImageUploadResponse>();
+                return r == null ? new ImageUploadResponse() : r;
+            }
+            else
+            {
+                return new ImageUploadResponse();
+            }
+
+        }
+    }
+}

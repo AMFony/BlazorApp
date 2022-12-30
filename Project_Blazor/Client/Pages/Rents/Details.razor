@@ -1,0 +1,76 @@
+﻿@page "/Rents/Details/{id:int}"
+@inject HttpClient http
+<div class="row">
+    <div class="row">
+        <h3>Rent Details</h3>
+        @if (Rent is null)
+        {
+            <div>Loading...</div>
+        }
+        else
+        {
+            <div class="row mb-1">
+                <label class="col-2 text-end">Rent Date</label>
+                <div class="col-10">
+                    @Rent.RentDate.ToString("yyyy-MM-dd")
+                </div>
+            </div>
+            <div class="row mb-1">
+                <label class="col-2 text-end">Customer</label>
+                <div class="col-10">
+                    @Rent.CustomerName
+                </div>
+            </div>
+                 <div class="row mb-1">
+                    <label class="col-2 text-end">Delivery date</label>
+                    <div class="col-10">
+                    @Rent.DeliveryDate?.ToString("yyyy-MM-dd")
+                    </div>
+                </div>
+            <div class="row mb-1">
+                <label class="col-2 text-end">Status</label>
+                <div class="col-10">
+                    @Rent.Status
+                </div>
+            </div>
+            @if(RentCars is not null)
+            {
+                <div><h4>Items</h4></div>
+                <table class="table table-bRented">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Vehicle</th>
+                            <th>Quantity</th>
+                            <th>Sub-total</th>
+                        </tr>
+                    </thead>
+                   <tbody>
+                        @foreach(var oi in RentCars)
+                    {
+                        <tr>
+                            <td>@oi.VehicleName</td>
+                            <td>@oi.Quantity</td>
+                            <td>@((oi.Price*oi.Quantity).ToString("0.00"))</td>
+                        </tr>
+                    }
+                   </tbody>
+                </table>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public int id { get; set; }
+    private RentViewDTO? Rent;
+    private RentCarViewDTO[]? RentCars;
+    protected override async Task OnInitializedAsync()
+    {
+        Rent = await http.GetFromJsonAsync<RentViewDTO>($"api/Rents/DTO/{id}");
+        if (Rent is not null)
+        {
+            RentCars = await http.GetFromJsonAsync<RentCarViewDTO[]>($"api/Rents/Items/{id}");
+        }
+    }
+}
